@@ -1,0 +1,84 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0f172a;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.level-card {
+  max-width: 720px;
+  margin: 32px auto;
+  padding: 32px;
+  background: #1a2332;
+  border-radius: 12px;
+  border: 1px solid #2d3a4a;
+}
+
+h1 { font-size: 2rem; color: #4fc3f7; margin-bottom: 8px; }
+h2 { font-size: 1.5rem; color: #4fc3f7; margin-bottom: 16px; }
+h3 { font-size: 1.1rem; color: #b0c4de; margin: 16px 0 8px; }
+
+.level-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.level-badge {
+  background: #4fc3f7;
+  color: #0f172a;
+  font-weight: bold;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.objective-box, .hint-box, .model-box {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.objective-box { background: #1e3a5f; border-left: 4px solid #4fc3f7; }
+.hint-box { background: #2a2a1a; border-left: 4px solid #ffd700; }
+.model-box { background: #1a2a1a; border-left: 4px solid #4caf50; }
+
+pre {
+  background: #0f172a;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  color: #a8d8a8;
+  margin-top: 8px;
+}
+
+code { background: #1e2a3a; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: #ffd700; }
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #4fc3f7;
+  color: #0f172a;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  text-decoration: none;
+  transition: opacity 0.2s;
+  margin-top: 12px;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-success { background: #4caf50; color: #fff; }
+.btn-secondary { background: #455a64; color: #fff; }
+.btn-warning { background: #ff9800; color: #fff; }
+
+.feedback {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.feedback.success { background: #1a3a1a; border: 1px solid #4caf50; color: #81c784; }
+.feedback.error { background: #3a1a1a; border: 1px solid #e53935; color: #ef9a9a; }
