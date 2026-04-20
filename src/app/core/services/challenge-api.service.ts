@@ -1,9 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { from, Observable } from 'rxjs';
+import { from, map, Observable } from 'rxjs';
 import { ApiResponse } from '../models/challenge.model';
 
+const LEVEL2_EXTERNAL_URL = 'https://jsonplaceholder.typicode.com/posts';
+const LEVEL3_EXTERNAL_URL = 'https://dummyjson.com/posts/add';
 const LEVEL4_THROTTLE_URL = 'https://jsonplaceholder.typicode.com/comments';
+
+export const LEVEL3_REQUIRED_HEADER = 'X-Challenge-Verified';
+export const LEVEL3_REQUIRED_HEADER_VALUE = 'devtools';
+
+export interface Level3Result {
+  bodySuccess: boolean;
+  headerPresent: boolean;
+  message: string;
+}
 
 interface Level4ThrottlePayload {
   size: number;
@@ -24,11 +35,25 @@ export class ChallengeApiService {
   }
 
   submitLevel2(body: Record<string, unknown>): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>('/api/level-2/submit', body);
+    return this.http.post<unknown>(LEVEL2_EXTERNAL_URL, body).pipe(
+      map((response) => normalizeApiResponse(response, 'Respuesta externa sin override.'))
+    );
   }
 
-  validateLevel3(body: Record<string, unknown>, headers?: HttpHeaders): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>('/api/level-3/validate', body, { headers });
+  validateLevel3(body: Record<string, unknown>): Observable<Level3Result> {
+    return this.http.post<unknown>(LEVEL3_EXTERNAL_URL, body, { observe: 'response' }).pipe(
+      map((httpResponse) => {
+        const body = httpResponse.body;
+        const apiResponse = normalizeApiResponse(body, 'Respuesta externa sin override.');
+        const headerValue = httpResponse.headers.get(LEVEL3_REQUIRED_HEADER) ?? '';
+        const headerPresent = headerValue.toLowerCase() === LEVEL3_REQUIRED_HEADER_VALUE.toLowerCase();
+        return {
+          bodySuccess: apiResponse.success,
+          headerPresent,
+          message: apiResponse.message
+        };
+      })
+    );
   }
 
   pingLevel4(): Observable<ApiResponse<Level4ThrottlePayload>> {
@@ -55,4 +80,17 @@ export class ChallengeApiService {
       } satisfies ApiResponse;
     }));
   }
+}
+
+function normalizeApiResponse(response: unknown, fallbackMessage: string): ApiResponse {
+  if (typeof response !== 'object' || response === null) {
+    return { success: false, message: fallbackMessage };
+  }
+
+  const payload = response as Partial<ApiResponse>;
+  return {
+    success: payload.success === true,
+    message: typeof payload.message === 'string' ? payload.message : fallbackMessage,
+    data: payload.data
+  };
 }

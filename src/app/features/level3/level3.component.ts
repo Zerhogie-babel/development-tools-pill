@@ -1,10 +1,7 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter } from 'rxjs';
-import { ChallengeApiService } from '../../core/services/challenge-api.service';
-import { ChallengeEventsService } from '../../core/services/challenge-events.service';
+import { ChallengeApiService, LEVEL3_REQUIRED_HEADER, LEVEL3_REQUIRED_HEADER_VALUE } from '../../core/services/challenge-api.service';
 import { ProgressService } from '../../core/services/progress.service';
 
 @Component({
@@ -18,18 +15,23 @@ import { ProgressService } from '../../core/services/progress.service';
         <h2>📋 Editar Body y Header</h2>
       </div>
       <div class="objective-box">
-        <strong>🎯 Objetivo:</strong> El servidor necesita el body correcto Y el header <code>Cache-Control: no-cache</code>.
+        <strong>🎯 Objetivo:</strong> Este nivel requiere dos overrides: el body de la response
+        <em>y</em> añadir un header de respuesta concreto. Ambos deben estar presentes para pasar.
       </div>
       <div class="model-box">
-        <strong>📋 Body esperado:</strong>
-        <pre>{{ expectedBody }}</pre>
-        <strong>📋 Header requerido:</strong>
-        <pre>Cache-Control: no-cache</pre>
+        <strong>📋 Override 1 — Response body:</strong>
+        <pre>{{ expectedResponseBody }}</pre>
+        <strong>📋 Override 2 — Response header:</strong>
+        <pre>{{ requiredHeader }}: {{ requiredHeaderValue }}</pre>
       </div>
       <div class="hint-box">
-        <strong>💡 Pista:</strong> Usa DevTools → Network → "Edit and Resend" para modificar el body Y añadir
-        el header <code>Cache-Control: no-cache</code> antes de reenviar. Si el servidor la acepta,
-        el nivel se completará automáticamente.
+        <strong>💡 Pista:</strong> DevTools → Sources → Overrides → añade override para
+        <code>POST dummyjson.com/posts/add</code>. En el fichero de override pon el body correcto
+        en el cuerpo y añade la cabecera <code>{{ requiredHeader }}: {{ requiredHeaderValue }}</code>
+        en la sección de headers. Luego pulsa nuevamente "Enviar Request".
+      </div>
+      <div class="feedback" *ngIf="partialFeedback" [class.error]="true">
+        {{ partialFeedback }}
       </div>
       <button class="btn" (click)="sendWrongRequest()">
         ▶ Enviar Request
@@ -37,6 +39,7 @@ import { ProgressService } from '../../core/services/progress.service';
       <div class="feedback" *ngIf="feedback" [class.success]="success" [class.error]="!success">
         {{ feedback }}
       </div>
+
       <button class="btn btn-success" *ngIf="completed" (click)="goNext()">
         Continuar → Nivel 4
       </button>
@@ -45,40 +48,38 @@ import { ProgressService } from '../../core/services/progress.service';
 })
 export class Level3Component {
   feedback = '';
+  partialFeedback = '';
   success = false;
   completed = false;
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly correctBody = { token: 'abc123', version: 2 };
-  expectedBody = JSON.stringify(this.correctBody, null, 2);
+  private readonly successResponseBody = { success: true, message: 'override ok' };
+  expectedResponseBody = JSON.stringify(this.successResponseBody, null, 2);
+  requiredHeader = LEVEL3_REQUIRED_HEADER;
+  requiredHeaderValue = LEVEL3_REQUIRED_HEADER_VALUE;
 
   constructor(
     private api: ChallengeApiService,
-    private challengeEvents: ChallengeEventsService,
     private progressService: ProgressService,
     private router: Router
-  ) {
-    this.challengeEvents.events$
-      .pipe(
-        filter((event) => event.level === 3),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(() => {
-        this.handleSuccess();
-      });
-  }
+  ) {}
 
   sendWrongRequest(): void {
+    this.partialFeedback = '';
+    this.feedback = '';
+
     this.api.validateLevel3({}).subscribe({
       next: (res) => {
-        if (res.success) {
+        if (res.bodySuccess && res.headerPresent) {
           this.handleSuccess();
         } else {
-          this.feedback = `❌ ${res.message}. Modifica el body Y añade el header Cache-Control: no-cache.`;
+          const missing: string[] = [];
+          if (!res.bodySuccess) missing.push('body de la response (success: true)');
+          if (!res.headerPresent) missing.push(`header ${LEVEL3_REQUIRED_HEADER}: ${LEVEL3_REQUIRED_HEADER_VALUE}`);
+          this.partialFeedback = `❌ Falta: ${missing.join(' · ')}. Completa ambos overrides.`;
           this.success = false;
         }
       },
       error: () => {
-        this.feedback = '❌ La request sigue siendo inválida. Revisa body y header en DevTools y reenvíala.';
+        this.feedback = '❌ Error de red. Revisa DevTools y vuelve a enviar.';
         this.success = false;
       }
     });
@@ -89,7 +90,7 @@ export class Level3Component {
       return;
     }
 
-    this.feedback = '✅ ¡Perfecto! Body y header correctos.';
+    this.feedback = '✅ ¡Perfecto! La app recibió una response overrideada válida.';
     this.success = true;
     this.completed = true;
     this.progressService.completeLevel(3);

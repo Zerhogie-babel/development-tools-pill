@@ -1,10 +1,7 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter } from 'rxjs';
 import { ChallengeApiService } from '../../core/services/challenge-api.service';
-import { ChallengeEventsService } from '../../core/services/challenge-events.service';
 import { ProgressService } from '../../core/services/progress.service';
 
 @Component({
@@ -18,16 +15,16 @@ import { ProgressService } from '../../core/services/progress.service';
         <h2>✏️ Modificar JSON</h2>
       </div>
       <div class="objective-box">
-        <strong>🎯 Objetivo:</strong> El botón envía un body incorrecto. Usa DevTools para enviarlo correcto.
+        <strong>🎯 Objetivo:</strong> El botón envía una request incorrecta. Debes overridear la response en DevTools para devolver <code>success: true</code>.
       </div>
       <div class="model-box">
-        <strong>📋 Body esperado por el servidor:</strong>
-        <pre>{{ expectedBody }}</pre>
+        <strong>📋 Response esperada por la app:</strong>
+        <pre>{{ expectedResponse }}</pre>
       </div>
       <div class="hint-box">
-        <strong>💡 Pista:</strong> Abre DevTools → Network → pulsa el botón → clic derecho en la request
-        <code>/api/level-2/submit</code> → "Edit and Resend" → cambia el body al modelo correcto → envía.
-        Cuando el servidor la acepte, este nivel se completará automáticamente.
+        <strong>💡 Pista:</strong> Abre DevTools → Network → pulsa el botón → selecciona la request
+        <code>https://jsonplaceholder.typicode.com/posts</code> → usa local overrides para modificar la response y que devuelva
+        <code>success: true, message: override ok</code>. Luego pulsa de nuevo "Enviar Request".
       </div>
       <button class="btn" (click)="sendWrongRequest()">
         ▶ Enviar Request
@@ -45,38 +42,27 @@ export class Level2Component {
   feedback = '';
   success = false;
   completed = false;
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly correctBody = { username: 'student', code: 'DEVTOOLS-2024', action: 'submit' };
-  expectedBody = JSON.stringify(this.correctBody, null, 2);
+  private readonly successResponse = { success: true, message: 'override ok' };
+  expectedResponse = JSON.stringify(this.successResponse, null, 2);
 
   constructor(
     private api: ChallengeApiService,
-    private challengeEvents: ChallengeEventsService,
     private progressService: ProgressService,
     private router: Router
-  ) {
-    this.challengeEvents.events$
-      .pipe(
-        filter((event) => event.level === 2),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(() => {
-        this.handleSuccess('✅ ¡Perfecto! La request reenviada desde DevTools fue aceptada.');
-      });
-  }
+  ) {}
 
   sendWrongRequest(): void {
     this.api.submitLevel2({}).subscribe({
       next: (res) => {
         if (res.success) {
-          this.handleSuccess('✅ ¡Correcto! El servidor aceptó el body correcto.');
+          this.handleSuccess('✅ ¡Correcto! La app recibió una response overrideada válida.');
         } else {
-          this.feedback = '❌ El body enviado es incorrecto. Corrígelo con "Edit and Resend" desde DevTools.';
+          this.feedback = '❌ Response no overrideada todavía. Modifica la response en DevTools y vuelve a enviar.';
           this.success = false;
         }
       },
       error: () => {
-        this.feedback = '❌ El body enviado es incorrecto. Corrígelo con "Edit and Resend" desde DevTools.';
+        this.feedback = '❌ Error de red. Revisa DevTools y vuelve a enviar.';
         this.success = false;
       }
     });
