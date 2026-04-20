@@ -1,0 +1,9 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "npx ng": true,
+    "/^cd \"c:/Users/enrique\\.rodriguez/Documents/Cursos/development-tools-pill\" && node --version && npm --version$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
+}

@@ -13,6 +13,9 @@ export class ChallengeEventsService implements OnDestroy {
 
   private readonly broadcastChannel = this.createBroadcastChannel();
   private lastEventKey = '';
+  private readonly serviceWorkerListener = (event: MessageEvent<unknown>): void => {
+    this.publish(event.data);
+  };
   private readonly windowListener = (event: Event): void => {
     this.publish((event as CustomEvent<ChallengeEvent>).detail);
   };
@@ -24,12 +27,20 @@ export class ChallengeEventsService implements OnDestroy {
       };
     }
 
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', this.serviceWorkerListener);
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener(CHALLENGE_EVENTS_WINDOW_EVENT, this.windowListener as EventListener);
     }
   }
 
   ngOnDestroy(): void {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.removeEventListener('message', this.serviceWorkerListener);
+    }
+
     if (typeof window !== 'undefined') {
       window.removeEventListener(CHALLENGE_EVENTS_WINDOW_EVENT, this.windowListener as EventListener);
     }

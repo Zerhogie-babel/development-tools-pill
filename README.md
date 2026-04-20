@@ -25,9 +25,14 @@ npm run build
 
 El despliegue es automático al hacer push a `main` usando GitHub Actions.
 
+Configuración necesaria en GitHub:
+- Ve a Settings → Pages.
+- En Build and deployment, selecciona Source: GitHub Actions.
+- No uses Deploy from a branch para este proyecto, porque terminaría sirviendo el contenido del repositorio (por ejemplo el README) en lugar del artefacto compilado.
+
 Para hacerlo manualmente:
 ```bash
-npm run build -- --base-href="/development-tools-pill/"
+npm run build -- --base-href="/<nombre-del-repo>/"
 ```
 
 Luego copia `dist/devtools-pill/browser/` a tu rama `gh-pages`.

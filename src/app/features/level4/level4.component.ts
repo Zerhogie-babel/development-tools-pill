@@ -9,24 +9,22 @@ import { ProgressService } from '../../core/services/progress.service';
   standalone: true,
   imports: [NgIf],
   template: `
-    <div class="level-card">
+    <div class="level-card level4-card">
       <div class="level-header">
         <span class="level-badge">Nivel 4</span>
         <h2>🐢 Throttling</h2>
       </div>
       <div class="objective-box">
         <strong>🎯 Objetivo:</strong> Pulsa "Continuar ahora" mientras la request está cargando.
-        Necesitas usar Throttling en DevTools para ralentizar la conexión.
+        Esta vez la descarga viene de un dominio público externo, así que el throttling sí afecta de verdad.
       </div>
       <div class="hint-box">
         <strong>💡 Pista:</strong> Abre DevTools → Network → selecciona "Slow 3G" en el desplegable de
-        throttling. Luego pulsa "Iniciar" y rápidamente pulsa "Continuar ahora" antes de que termine.
+        throttling. Luego pulsa "Iniciar", espera a que aparezca la petición contra
+        <code>jsonplaceholder.typicode.com</code> y baja hasta el botón fijo del final antes de que termine.
       </div>
       <button class="btn" (click)="startChallenge()" [disabled]="loading || completed">
         {{ loading ? '⏳ Cargando...' : '▶ Iniciar' }}
-      </button>
-      <button class="btn btn-warning" *ngIf="loading" (click)="continueNow()" style="margin-left:8px">
-        ⚡ Continuar ahora
       </button>
       <div class="feedback" *ngIf="feedback" [class.success]="success" [class.error]="!success">
         {{ feedback }}
@@ -35,7 +33,35 @@ import { ProgressService } from '../../core/services/progress.service';
         Continuar → Final
       </button>
     </div>
-  `
+    <div class="bottom-action" *ngIf="loading">
+      <button class="btn btn-warning bottom-btn" (click)="continueNow()">
+        ⚡ Continuar ahora
+      </button>
+    </div>
+  `,
+  styles: [`
+    .level4-card {
+      min-height: calc(100vh - 130px);
+      padding-bottom: 120px;
+    }
+
+    .bottom-action {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 16px;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .bottom-btn {
+      min-width: 240px;
+      pointer-events: auto;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+  `]
 })
 export class Level4Component {
   loading = false;
@@ -56,18 +82,18 @@ export class Level4Component {
     this.feedback = '';
 
     this.api.pingLevel4().subscribe({
-      next: () => {
+      next: (response) => {
         this.loading = false;
         if (this.continuePressed) {
           this.showSuccess();
         } else {
-          this.feedback = '❌ La request terminó demasiado rápido. Activa Slow 3G en DevTools e inténtalo de nuevo.';
+          this.feedback = `❌ La descarga desde ${response.data?.url ?? 'el dominio público'} terminó demasiado rápido. Activa Slow 3G e inténtalo de nuevo.`;
           this.success = false;
         }
       },
       error: () => {
         this.loading = false;
-        this.feedback = '❌ Error en la request.';
+        this.feedback = '❌ La petición pública falló. Revisa tu conexión e inténtalo de nuevo.';
         this.success = false;
       }
     });
