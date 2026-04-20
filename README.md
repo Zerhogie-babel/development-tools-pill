@@ -39,11 +39,11 @@ Aprende a bloquear requests desde DevTools. El tracker no debe completarse.
 - DevTools → Network → clic derecho en `/api/level-1/tracker` → "Block request URL"
 
 ### Nivel 2 - Modificar JSON
-El botón envía un body vacío. Usa "Edit and Resend" para enviar el body correcto.
+El botón envía un body vacío. Usa "Edit and Resend" para enviar el body correcto y el nivel se completará cuando el mock acepte esa request reenviada.
 - DevTools → Network → clic derecho en request → "Edit and Resend"
 
 ### Nivel 3 - Editar Body y Header
-Necesitas modificar el body Y añadir un header específico (`Cache-Control: no-cache`).
+Necesitas modificar el body Y añadir un header específico (`Cache-Control: no-cache`). El nivel se completa cuando la request reenviada cumple ambas condiciones.
 - DevTools → Network → "Edit and Resend" → modifica headers y body
 
 ### Nivel 4 - Throttling

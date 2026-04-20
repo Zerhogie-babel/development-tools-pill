@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
-import { HttpHeaders } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { ChallengeApiService } from '../../core/services/challenge-api.service';
+import { ChallengeEventsService } from '../../core/services/challenge-events.service';
 import { ProgressService } from '../../core/services/progress.service';
 
 @Component({
@@ -26,13 +28,11 @@ import { ProgressService } from '../../core/services/progress.service';
       </div>
       <div class="hint-box">
         <strong>💡 Pista:</strong> Usa DevTools → Network → "Edit and Resend" para modificar el body Y añadir
-        el header <code>Cache-Control: no-cache</code> antes de reenviar.
+        el header <code>Cache-Control: no-cache</code> antes de reenviar. Si el servidor la acepta,
+        el nivel se completará automáticamente.
       </div>
       <button class="btn" (click)="sendWrongRequest()">
-        ▶ Enviar Request (incorrecta)
-      </button>
-      <button class="btn btn-secondary" (click)="checkManual()" style="margin-left:8px">
-        🔍 Verificar resultado
+        ▶ Enviar Request
       </button>
       <div class="feedback" *ngIf="feedback" [class.success]="success" [class.error]="!success">
         {{ feedback }}
@@ -47,14 +47,25 @@ export class Level3Component {
   feedback = '';
   success = false;
   completed = false;
+  private readonly destroyRef = inject(DestroyRef);
   private readonly correctBody = { token: 'abc123', version: 2 };
   expectedBody = JSON.stringify(this.correctBody, null, 2);
 
   constructor(
     private api: ChallengeApiService,
+    private challengeEvents: ChallengeEventsService,
     private progressService: ProgressService,
     private router: Router
-  ) {}
+  ) {
+    this.challengeEvents.events$
+      .pipe(
+        filter((event) => event.level === 3),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.handleSuccess();
+      });
+  }
 
   sendWrongRequest(): void {
     this.api.validateLevel3({}).subscribe({
@@ -67,26 +78,17 @@ export class Level3Component {
         }
       },
       error: () => {
-        this.feedback = '❌ Error en la request. Revisa body y headers en DevTools.';
+        this.feedback = '❌ La request sigue siendo inválida. Revisa body y header en DevTools y reenvíala.';
         this.success = false;
       }
     });
   }
 
-  checkManual(): void {
-    const headers = new HttpHeaders({ 'Cache-Control': 'no-cache' });
-    this.api.validateLevel3(this.correctBody, headers).subscribe({
-      next: (res) => {
-        if (res.success) { this.handleSuccess(); }
-        else {
-          this.feedback = `❌ ${res.message}`;
-          this.success = false;
-        }
-      }
-    });
-  }
-
   private handleSuccess(): void {
+    if (this.completed) {
+      return;
+    }
+
     this.feedback = '✅ ¡Perfecto! Body y header correctos.';
     this.success = true;
     this.completed = true;

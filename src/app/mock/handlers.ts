@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from 'msw';
+import { notifyChallengeSolved } from './challenge-events';
 
 export const handlers = [
   http.get('/api/level-1/check', async () => {
@@ -19,6 +20,7 @@ export const handlers = [
       body['code'] === 'DEVTOOLS-2024' &&
       body['action'] === 'submit';
     if (isCorrect) {
+      notifyChallengeSolved(2);
       return HttpResponse.json({ success: true, message: '¡Body correcto!' });
     }
     return HttpResponse.json({ success: false, message: 'Body incorrecto' }, { status: 400 });
@@ -31,6 +33,7 @@ export const handlers = [
     const bodyOk = body['token'] === 'abc123' && body['version'] === 2;
     const headerOk = cacheControl.includes('no-cache');
     if (bodyOk && headerOk) {
+      notifyChallengeSolved(3);
       return HttpResponse.json({ success: true, message: '¡Body y header correctos!' });
     }
     if (!bodyOk) {
